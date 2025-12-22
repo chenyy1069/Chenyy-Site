@@ -1,0 +1,11 @@
+{
+  "name": "chenyy-site",
+  "compatibility_date": "2024-04-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
