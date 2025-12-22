@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TypingTitle } from './components/TypingTitle';
 import { ContactModal } from './components/modals/ContactModal';
 import { DonationOverlay } from './components/overlays/DonationOverlay';
@@ -11,14 +11,6 @@ export default function App() {
   const [isDonationOpen, setIsDonationOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   const [qrImage, setQrImage] = useState<string | null>(null);
-
-  // Close all modals helper
-  const closeAll = () => {
-    setIsContactOpen(false);
-    setIsDonationOpen(false);
-    setIsCryptoOpen(false);
-    setQrImage(null);
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
