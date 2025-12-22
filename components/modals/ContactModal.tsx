@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, MessageCircle, Facebook, Copy, Check, LucideIcon } from 'lucide-react';
+import { X, Mail, MessageCircle, Facebook, Copy, Check, LucideIcon, MessageSquareText } from 'lucide-react';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -89,6 +89,14 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
             value="@Chenyy1069" 
             colorClass="text-sky-600" 
             bgClass="bg-sky-100 group-hover:bg-sky-200"
+          />
+
+          <ContactItem 
+            icon={MessageSquareText} 
+            label="WeChat" 
+            value="@19129958669" 
+            colorClass="text-green-600" 
+            bgClass="bg-green-100 group-hover:bg-green-200"
           />
 
           <ContactItem 
