@@ -4,6 +4,7 @@ import { ContactModal } from './components/modals/ContactModal';
 import { DonationOverlay } from './components/overlays/DonationOverlay';
 import { CryptoModal } from './components/modals/CryptoModal';
 import { ImagePopup } from './components/overlays/ImagePopup';
+import { InteractiveBackground } from './components/InteractiveBackground';
 import { Mail, DollarSign } from 'lucide-react';
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <InteractiveBackground />
       
       {/* Main Card */}
       <div className="glass-panel w-full max-w-lg rounded-3xl shadow-2xl p-8 md:p-12 text-center relative z-10 transition-all duration-300 hover:shadow-3xl transform hover:-translate-y-1">
