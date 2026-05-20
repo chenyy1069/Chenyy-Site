@@ -9,12 +9,15 @@ export const TypingTitle: React.FC<TypingTitleProps> = ({ text }) => {
   
   useEffect(() => {
     setDisplayedText('');
+    const chars = [...text];
+    
     // Small delay before starting to feel more natural
     const startTimeout = setTimeout(() => {
       const intervalId = setInterval(() => {
         setDisplayedText((prev) => {
-          if (prev.length < text.length) {
-            return text.slice(0, prev.length + 1);
+          const prevChars = [...prev];
+          if (prevChars.length < chars.length) {
+            return prev + chars[prevChars.length];
           }
           clearInterval(intervalId);
           return prev;

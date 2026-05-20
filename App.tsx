@@ -5,7 +5,7 @@ import { DonationOverlay } from './components/overlays/DonationOverlay';
 import { CryptoModal } from './components/modals/CryptoModal';
 import { ImagePopup } from './components/overlays/ImagePopup';
 import { InteractiveBackground } from './components/InteractiveBackground';
-import { Mail, DollarSign } from 'lucide-react';
+import { Mail, DollarSign, Github, Globe } from 'lucide-react';
 
 export default function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -21,13 +21,13 @@ export default function App() {
       <div className="glass-panel w-full max-w-lg rounded-3xl shadow-2xl p-8 md:p-12 text-center relative z-10 transition-all duration-300 hover:shadow-3xl transform hover:-translate-y-1">
         
         <div className="mb-10 min-h-[4rem] flex items-center justify-center">
-          <TypingTitle text="Hi! Welcome to Chenyy's site!" />
+          <TypingTitle text="Hi! Welcome to ChenYY🌀's site!" />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
           <button
             onClick={() => setIsContactOpen(true)}
-            className="group flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-200 transition-all duration-200 w-full sm:w-auto transform active:scale-95"
+            className="group flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-200 transition-all duration-200 w-full transform active:scale-95"
           >
             <Mail className="w-5 h-5 group-hover:animate-bounce" />
             <span>Contact</span>
@@ -35,11 +35,31 @@ export default function App() {
 
           <button
             onClick={() => setIsDonationOpen(true)}
-            className="group flex items-center justify-center gap-2 px-8 py-3 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-xl font-semibold shadow-lg shadow-amber-100 transition-all duration-200 w-full sm:w-auto transform active:scale-95"
+            className="group flex items-center justify-center gap-2 px-6 py-3 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-xl font-semibold shadow-lg shadow-amber-100 transition-all duration-200 w-full transform active:scale-95"
           >
             <DollarSign className="w-5 h-5 group-hover:rotate-12 transition-transform" />
             <span>Donate</span>
           </button>
+
+          <a
+            href="https://github.com/chenyy1069"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-semibold shadow-lg shadow-gray-300 transition-all duration-200 w-full transform active:scale-95"
+          >
+            <Github className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span>My Github Page</span>
+          </a>
+
+          <a
+            href="https://nevigation.chenyy.cc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-200 transition-all duration-200 w-full transform active:scale-95"
+          >
+            <Globe className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+            <span>Wanna see my projects?</span>
+          </a>
         </div>
       </div>
 
