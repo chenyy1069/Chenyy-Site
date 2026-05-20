@@ -52,7 +52,7 @@ export default function App() {
           </a>
 
           <a
-            href="https://nevigation.chenyy.cc"
+            href="https://navigation.chenyy.cc"
             target="_blank"
             rel="noopener noreferrer"
             className="group flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-200 transition-all duration-200 w-full transform active:scale-95"
