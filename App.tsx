@@ -58,7 +58,7 @@ export default function App() {
             className="group flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-200 transition-all duration-200 w-full transform active:scale-95"
           >
             <Globe className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-            <span>Wanna see my projects?</span>
+            <span>My Projects</span>
           </a>
         </div>
       </div>
