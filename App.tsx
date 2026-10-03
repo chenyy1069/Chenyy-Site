@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TypingTitle } from './components/TypingTitle';
+import { HoloCard } from './components/HoloCard';
 import { ContactModal } from './components/modals/ContactModal';
 import { DonationOverlay } from './components/overlays/DonationOverlay';
 import { CryptoModal } from './components/modals/CryptoModal';
 import { ImagePopup } from './components/overlays/ImagePopup';
-import { InteractiveBackground } from './components/InteractiveBackground';
-import { Mail, DollarSign, Github, Globe } from 'lucide-react';
+import { InteractiveBackground, emitVortex } from './components/InteractiveBackground';
+import { Mail, DollarSign, Github, Globe, ArrowUpRight } from 'lucide-react';
+
+const GITHUB_URL = 'https://github.com/chenyy1069';
+const PROJECTS_URL = 'https://navigation.chenyy.cc';
 
 export default function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -13,75 +17,108 @@ export default function App() {
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   const [qrImage, setQrImage] = useState<string | null>(null);
 
+  const anyOpen = isContactOpen || isDonationOpen || isCryptoOpen || qrImage !== null;
+
+  // Esc peels off the top-most layer; single keys open things from the card.
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.key === 'Escape') {
+        if (qrImage) setQrImage(null);
+        else if (isCryptoOpen) setIsCryptoOpen(false);
+        else if (isContactOpen) setIsContactOpen(false);
+        else if (isDonationOpen) setIsDonationOpen(false);
+        return;
+      }
+      if (anyOpen) return;
+      switch (e.key.toLowerCase()) {
+        case 'c':
+          setIsContactOpen(true);
+          break;
+        case 'd':
+          setIsDonationOpen(true);
+          break;
+        case 'g':
+          window.open(GITHUB_URL, '_blank', 'noopener,noreferrer');
+          break;
+        case 'p':
+          window.open(PROJECTS_URL, '_blank', 'noopener,noreferrer');
+          break;
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [anyOpen, qrImage, isCryptoOpen, isContactOpen, isDonationOpen]);
+
+  // Clicking empty space sends a ripple through the vortex.
+  const handleStagePointerDown = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('.card-wrap')) return;
+    emitVortex({ type: 'wave', x: e.clientX, y: e.clientY });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
+    <>
       <InteractiveBackground />
-      
-      {/* Main Card */}
-      <div className="glass-panel w-full max-w-lg rounded-3xl shadow-2xl p-8 md:p-12 text-center relative z-10 transition-all duration-300 hover:shadow-3xl transform hover:-translate-y-1">
-        
-        <div className="mb-10 min-h-[4rem] flex items-center justify-center">
-          <TypingTitle text="Hi! Welcome to ChenYY🌀's site!" />
-        </div>
+      <div className="grain" aria-hidden="true" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-          <button
-            onClick={() => setIsContactOpen(true)}
-            className="group flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-200 transition-all duration-200 w-full transform active:scale-95"
-          >
-            <Mail className="w-5 h-5 group-hover:animate-bounce" />
-            <span>Contact</span>
-          </button>
+      <main className="stage" onPointerDown={handleStagePointerDown}>
+        <HoloCard>
+          <div className="card-head">
+            <span><i className="dot" />chenyy.cc</span>
+            <span>N° 1069</span>
+          </div>
 
-          <button
-            onClick={() => setIsDonationOpen(true)}
-            className="group flex items-center justify-center gap-2 px-6 py-3 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-xl font-semibold shadow-lg shadow-amber-100 transition-all duration-200 w-full transform active:scale-95"
-          >
-            <DollarSign className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-            <span>Donate</span>
-          </button>
+          <TypingTitle text="Hi! Welcome to ChenYY🌀's site!" accent="ChenYY" />
 
-          <a
-            href="https://github.com/chenyy1069"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center justify-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-semibold shadow-lg shadow-gray-300 transition-all duration-200 w-full transform active:scale-95"
-          >
-            <Github className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span>My Github Page</span>
-          </a>
+          <nav className="actions">
+            <button className="action" style={{ '--c': 'var(--cyan)' } as React.CSSProperties} onClick={() => setIsContactOpen(true)}>
+              <Mail size={16} />
+              <span>Contact</span>
+              <kbd>C</kbd>
+            </button>
 
-          <a
-            href="https://navigation.chenyy.cc"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-200 transition-all duration-200 w-full transform active:scale-95"
-          >
-            <Globe className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-            <span>My Projects</span>
-          </a>
-        </div>
-      </div>
+            <button className="action" style={{ '--c': 'var(--amber)' } as React.CSSProperties} onClick={() => setIsDonationOpen(true)}>
+              <DollarSign size={16} />
+              <span>Donate</span>
+              <kbd>D</kbd>
+            </button>
 
-      {/* Footer / Background decorative elements */}
-      <div className="fixed -bottom-32 -right-32 w-96 h-96 bg-purple-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
-      <div className="fixed -top-32 -left-32 w-96 h-96 bg-blue-200 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+            <a className="action" style={{ '--c': 'var(--ink)' } as React.CSSProperties} href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+              <Github size={16} />
+              <span>My Github Page<ArrowUpRight size={12} className="out" /></span>
+              <kbd>G</kbd>
+            </a>
 
-      {/* Modals & Overlays */}
+            <a className="action" style={{ '--c': 'var(--violet)' } as React.CSSProperties} href={PROJECTS_URL} target="_blank" rel="noopener noreferrer">
+              <Globe size={16} />
+              <span>My Projects<ArrowUpRight size={12} className="out" /></span>
+              <kbd>P</kbd>
+            </a>
+          </nav>
+        </HoloCard>
+
+        <footer className="corners" aria-hidden="true">
+          <span>© {new Date().getFullYear()} ChenYY</span>
+          <span className="hint">
+            <span className="hint-fine">click the void ✦</span>
+            <span className="hint-touch">tap the void ✦</span>
+          </span>
+        </footer>
+      </main>
+
+      {/* Modals & Overlays, stacked by z-index: donation 40 < contact 50 < crypto 60 < QR 70 */}
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
-      
-      <DonationOverlay 
-        isOpen={isDonationOpen} 
+
+      <DonationOverlay
+        isOpen={isDonationOpen}
         onClose={() => setIsDonationOpen(false)}
         onOpenCrypto={() => setIsCryptoOpen(true)}
         onShowImage={(url) => setQrImage(url)}
       />
 
-      {/* Crypto Modal sits on top of Donation Overlay ideally, handled by z-index in component */}
       <CryptoModal isOpen={isCryptoOpen} onClose={() => setIsCryptoOpen(false)} />
 
       <ImagePopup imageUrl={qrImage} onClose={() => setQrImage(null)} />
-
-    </div>
+    </>
   );
 }
