@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, ChevronDown, Wallet, Smartphone, CreditCard, LucideIcon } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, ChevronDown, Wallet, Smartphone, CreditCard, LucideIcon } from 'lucide-react';
 
 interface DonationOverlayProps {
   isOpen: boolean;
@@ -8,12 +8,14 @@ interface DonationOverlayProps {
   onShowImage: (url: string) => void;
 }
 
-const Method = ({ icon: Icon, label, color, onClick }: { icon: LucideIcon; label: string; color: string; onClick: () => void }) => (
-  <button className="method" style={{ '--c': color } as React.CSSProperties} onClick={onClick}>
-    <span className="method-dot" />
-    <Icon size={18} />
+const Method = ({ no, icon: Icon, label, onClick }: { no: string; icon: LucideIcon; label: string; onClick: () => void }) => (
+  <button className="method" onClick={onClick}>
+    <span className="method-no">{no}</span>
+    <Icon size={18} strokeWidth={1.5} />
     <span className="method-label">{label}</span>
-    <ArrowRight size={16} className="method-arrow" />
+    <span className="card-arrow" aria-hidden="true">
+      <ArrowUpRight size={16} strokeWidth={1.5} />
+    </span>
   </button>
 );
 
@@ -28,17 +30,21 @@ export const DonationOverlay: React.FC<DonationOverlayProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="donate">
-      <button
-        className="pill back"
-        onClick={() => {
-          setShowMethods(false);
-          onClose();
-        }}
-      >
-        <ArrowLeft size={14} />
-        Back
-      </button>
+    <div className="donate" role="dialog" aria-modal="true" aria-label="Donate">
+      <div className="donate-bar">
+        <button
+          className="pill"
+          onClick={() => {
+            setShowMethods(false);
+            onClose();
+          }}
+          autoFocus
+        >
+          <ArrowLeft size={15} strokeWidth={1.5} />
+          Back
+        </button>
+        <span className="section-note">04 / FUEL</span>
+      </div>
 
       <div className="donate-body">
         <span className="donate-emoji">😁</span>
@@ -47,19 +53,19 @@ export const DonationOverlay: React.FC<DonationOverlayProps> = ({
         </p>
 
         <button
-          className={`pill pill-warm ${showMethods ? 'is-open' : ''}`}
+          className={`pill pill-ink ${showMethods ? 'is-open' : ''}`}
           onClick={() => setShowMethods(!showMethods)}
           aria-expanded={showMethods}
         >
           <span>Show Method</span>
-          <ChevronDown size={16} className="chev" />
+          <ChevronDown size={16} strokeWidth={1.5} className="chev" />
         </button>
 
         <div className={`methods ${showMethods ? 'is-open' : ''}`}>
           <div className="methods-inner">
-            <Method icon={Smartphone} label="AliPay" color="#1677ff" onClick={() => onShowImage('https://res.chenyy.cc/alipay.jpg')} />
-            <Method icon={CreditCard} label="WechatPay" color="#07c160" onClick={() => onShowImage('https://res.chenyy.cc/wechatpay.jpg')} />
-            <Method icon={Wallet} label="Cryptos" color="#a58bff" onClick={onOpenCrypto} />
+            <Method no="A" icon={Smartphone} label="AliPay" onClick={() => onShowImage('https://res.chenyy.cc/alipay.jpg')} />
+            <Method no="B" icon={CreditCard} label="WechatPay" onClick={() => onShowImage('https://res.chenyy.cc/wechatpay.jpg')} />
+            <Method no="C" icon={Wallet} label="Cryptos" onClick={onOpenCrypto} />
           </div>
         </div>
       </div>
