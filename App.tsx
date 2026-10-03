@@ -5,8 +5,8 @@ import { DonationOverlay } from './components/overlays/DonationOverlay';
 import { CryptoModal } from './components/modals/CryptoModal';
 import { ImagePopup } from './components/overlays/ImagePopup';
 import { CardArtwork, OrbitFigure, Spiral, Star } from './components/Artwork';
-import { PenaltyGame } from './components/PenaltyGame';
-import { useShenzhenTime, useTheme } from './components/hooks';
+import { OrbitLab } from './components/OrbitLab';
+import { useTheme } from './components/hooks';
 
 const GITHUB_URL = 'https://github.com/chenyy1069';
 const PROJECTS_URL = 'https://navigation.chenyy.cc';
@@ -39,6 +39,19 @@ const MADE = [
   },
 ];
 
+// Working propositions, numbered after the Tractatus (loosely): n.1 remarks on n.
+const PROPOSITIONS = [
+  { no: '1', en: '“I don’t know” is a complete answer.', zh: '「不知道」是一个完整的答案。' },
+  { no: '1.1', en: 'A confident wrong answer is worse than an honest blank.', zh: '自信的错误，比诚实的空白更糟。' },
+  { no: '2', en: 'Correct the premise before answering the question.', zh: '先修正前提，再回答问题。' },
+  { no: '2.1', en: 'Including my own.', zh: '包括我自己的前提。' },
+  { no: '3', en: 'Truth does not bend to whoever is louder.', zh: '真相不向更大的声音弯腰。' },
+  { no: '3.1', en: 'Pressure is not an argument.', zh: '压力不是论据。' },
+  { no: '4', en: 'Sharp is fine. Vague is not.', zh: '尖锐可以，含糊不行。' },
+  { no: '5', en: 'A person is not a list of facts about them.', zh: '人不是一串关于自己的事实。' },
+  { no: '6', en: 'Stay a little out of orbit.', zh: '留一点偏离轨道的余地。' },
+];
+
 function SectionHead({ id, zh, en, note }: { id: string; zh: string; en: string; note: string }) {
   return (
     <div className="section-head">
@@ -69,7 +82,6 @@ export default function App() {
   const [qrImage, setQrImage] = useState<string | null>(null);
   const [starTurns, setStarTurns] = useState(0);
   const { theme, toggle } = useTheme();
-  const time = useShenzhenTime();
 
   const anyOpen = isContactOpen || isDonationOpen || isCryptoOpen || qrImage !== null;
 
@@ -106,9 +118,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [anyOpen, qrImage, isCryptoOpen, isContactOpen, isDonationOpen]);
 
-  const awake =
-    time.hour < 7 ? '大概在睡觉 · probably asleep' : time.hour >= 23 ? '该睡了 · should be asleep' : '醒着，大概 · awake, probably';
-
   return (
     <>
       <div className="shell">
@@ -120,10 +129,10 @@ export default function App() {
             </span>
           </a>
           <nav className="site-nav" aria-label="页面导航 / Sections">
-            <a href="#about">关于 About</a>
+            <a href="#propositions">命题 Propositions</a>
             <a href="#doors">去处 Doors</a>
             <a href="#made">作品 Made</a>
-            <a href="#goal">球门 Goal</a>
+            <a href="#orbit">轨道 Orbit</a>
           </nav>
           <button
             type="button"
@@ -157,7 +166,7 @@ export default function App() {
                 <br />
                 一个不太愿意待在轨道里的人。
               </p>
-              <a className="hero-next" href="#about">
+              <a className="hero-next" href="#propositions">
                 <span className="hero-next-arrow">↓</span> 随好奇心，往下看
               </a>
             </div>
@@ -166,55 +175,33 @@ export default function App() {
               <OrbitFigure />
               <figcaption>
                 <span>FIG. 01 — A SMALL UNIVERSE, NOT TO SCALE</span>
-                <span>22°32′N 114°03′E</span>
+                <span>OBSERVER × 1</span>
               </figcaption>
             </figure>
           </section>
 
-          {/* ---------- about ---------- */}
-          <section className="section" aria-labelledby="about">
-            <SectionHead id="about" zh="关于" en="ABOUT" note="02 / WHO, ROUGHLY" />
-            <div className="about">
-              <div>
-                <p className="statement">
-                  Lives in Shenzhen. Writes a little code. <em>Keeps</em> a little goal.
-                </p>
-                <p className="lede" lang="zh-CN">
-                  住在深圳，写一点代码，守一点球门。对很多事情好奇，对含糊的答案不太客气——包括我自己的。
-                </p>
-              </div>
-
-              <dl className="spec">
-                <div>
-                  <dt>Based in</dt>
-                  <dd>
-                    深圳 Shenzhen <small>22°32′N 114°03′E</small>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Local time</dt>
-                  <dd>
-                    <span className="clock">{time.text}</span> <small>UTC+8 · {awake}</small>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Position</dt>
-                  <dd>
-                    守门员 Goalkeeper <small>最后一道防线 · the last line</small>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Writes</dt>
-                  <dd>
-                    TypeScript · React <small>和一些半成品 · and some half-finished things</small>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Speaks</dt>
-                  <dd>中文 · English</dd>
-                </div>
-              </dl>
+          {/* ---------- propositions ---------- */}
+          <section className="section" aria-labelledby="propositions">
+            <SectionHead id="propositions" zh="命题" en="PROPOSITIONS" note="02 / NUMBERED AFTER THE TRACTATUS, LOOSELY" />
+            <div className="props-intro">
+              <p className="statement">
+                Working <em>propositions.</em>
+              </p>
+              <p className="lede" lang="zh-CN">
+                不是信条，是目前还没被推翻的假设。随时修订。
+              </p>
             </div>
+            <ol className="props">
+              {PROPOSITIONS.map((p) => (
+                <li key={p.no} className={p.no.includes('.') ? 'is-remark' : ''}>
+                  <span className="props-no">{p.no}</span>
+                  <span className="props-text">
+                    <span className="props-en">{p.en}</span>
+                    <span className="props-zh" lang="zh-CN">{p.zh}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
           </section>
 
           {/* ---------- doors ---------- */}
@@ -297,19 +284,22 @@ export default function App() {
             </ol>
           </section>
 
-          {/* ---------- goal ---------- */}
-          <section className="section" aria-labelledby="goal">
-            <SectionHead id="goal" zh="球门" en="BETWEEN THE POSTS" note="05 / FIG. 02 — 7.32 × 2.44 M" />
-            <div className="goal">
-              <div className="goal-copy">
+          {/* ---------- orbit ---------- */}
+          <section className="section" aria-labelledby="orbit">
+            <SectionHead id="orbit" zh="轨道" en="ORBIT" note="05 / FIG. 02 — FALL, LEAVE, OR NEITHER" />
+            <div className="orbit-section">
+              <div className="orbit-copy">
                 <p className="statement">
-                  Saves, <em>not</em> goals.
+                  Falling, and <em>missing,</em> forever.
                 </p>
                 <p className="lede" lang="zh-CN">
-                  守门员的快乐不是进球，是让球进不去。五个点球，移动鼠标、手指或方向键去扑。
+                  轨道不是静止，是一直在坠落，又一直错过地面。速度太小会坠落，太大会离开；介于两者之间，才叫轨道。
+                </p>
+                <p className="lede" lang="zh-CN">
+                  按住拖动，抛出一颗卫星。轻点一下，是一条完美的圆。
                 </p>
               </div>
-              <PenaltyGame />
+              <OrbitLab />
             </div>
           </section>
         </main>
@@ -320,7 +310,7 @@ export default function App() {
           </p>
           <div className="footer-row">
             <span>© {new Date().getFullYear()} ChenYY</span>
-            <span>22°32′N 114°03′E · {time.text} UTC+8</span>
+            <span>Subject to revision · 随时修订</span>
             <span className="footer-keys">KEYS — C · D · G · P</span>
           </div>
         </footer>

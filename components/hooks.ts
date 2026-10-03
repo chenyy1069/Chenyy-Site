@@ -50,25 +50,3 @@ export const useTheme = () => {
 
   return { theme, toggle };
 };
-
-const timeFmt = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Asia/Shanghai',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-});
-
-/** Wall-clock time in Shenzhen (UTC+8), ticking every second. */
-export const useShenzhenTime = () => {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const text = timeFmt.format(now);
-  const hour = Number(text.slice(0, 2)) % 24;
-  return { text, hour };
-};
