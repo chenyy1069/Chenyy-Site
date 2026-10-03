@@ -1,25 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { TypingTitle } from './components/TypingTitle';
-import { HoloCard } from './components/HoloCard';
+import { ArrowUpRight, Moon, Sun } from 'lucide-react';
 import { ContactModal } from './components/modals/ContactModal';
-import { DonationOverlay } from './components/overlays/DonationOverlay';
+import { DonationModal } from './components/modals/DonationModal';
 import { CryptoModal } from './components/modals/CryptoModal';
 import { ImagePopup } from './components/overlays/ImagePopup';
-import { InteractiveBackground, emitVortex } from './components/InteractiveBackground';
-import { Mail, DollarSign, Github, Globe, ArrowUpRight } from 'lucide-react';
+import { Spiral, Star } from './components/Artwork';
+import { Orbit } from './components/Orbit';
+import { useTheme } from './components/hooks';
 
 const GITHUB_URL = 'https://github.com/chenyy1069';
 const PROJECTS_URL = 'https://navigation.chenyy.cc';
+
+function LinkBody({ no, label, zh, meta }: { no: string; label: string; zh: string; meta: string }) {
+  return (
+    <>
+      <span className="link-no">{no}</span>
+      <span className="link-label">
+        {label}
+        <small lang="zh-CN">{zh}</small>
+      </span>
+      <span className="link-meta">{meta}</span>
+      <span className="card-arrow" aria-hidden="true">
+        <ArrowUpRight size={18} strokeWidth={1.5} />
+      </span>
+    </>
+  );
+}
 
 export default function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isDonationOpen, setIsDonationOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   const [qrImage, setQrImage] = useState<string | null>(null);
+  const [starTurns, setStarTurns] = useState(0);
+  const { theme, toggle } = useTheme();
+
+  // The entrance sequence is pure CSS; drop its class once it has played.
+  useEffect(() => {
+    const id = window.setTimeout(() => document.documentElement.classList.remove('is-entering'), 2800);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const anyOpen = isContactOpen || isDonationOpen || isCryptoOpen || qrImage !== null;
 
-  // Esc peels off the top-most layer; single keys open things from the card.
+  // Esc peels off the top-most layer; single keys open the four links.
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
@@ -31,6 +55,7 @@ export default function App() {
         return;
       }
       if (anyOpen) return;
+      if ((e.target as HTMLElement).closest('input, textarea')) return;
       switch (e.key.toLowerCase()) {
         case 'c':
           setIsContactOpen(true);
@@ -50,66 +75,67 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [anyOpen, qrImage, isCryptoOpen, isContactOpen, isDonationOpen]);
 
-  // Clicking empty space sends a ripple through the vortex.
-  const handleStagePointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('.card-wrap')) return;
-    emitVortex({ type: 'wave', x: e.clientX, y: e.clientY });
-  };
-
   return (
     <>
-      <InteractiveBackground />
-      <div className="grain" aria-hidden="true" />
+      <div className="shell">
+        <header className="site-header" style={{ '--turns': starTurns } as React.CSSProperties}>
+          <span className="wordmark">
+            <Star className="brand-mark" />
+            <span>
+              chenyy<span className="wordmark-dot">.</span>cc
+            </span>
+          </span>
+          <button
+            type="button"
+            className="round-btn"
+            onClick={() => {
+              toggle();
+              setStarTurns((n) => n + 1);
+            }}
+            aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            aria-pressed={theme === 'dark'}
+          >
+            {theme === 'dark' ? <Sun size={17} strokeWidth={1.5} /> : <Moon size={17} strokeWidth={1.5} />}
+          </button>
+        </header>
 
-      <main className="stage" onPointerDown={handleStagePointerDown}>
-        <HoloCard>
-          <div className="card-head">
-            <span><i className="dot" />chenyy.cc</span>
-            <span>N° 1069</span>
+        <main className="card">
+          <div className="card-copy">
+            <h1 className="display">
+              Hi! Welcome to <em>ChenYY</em>
+              <Spiral className="glyph-spiral" />
+              <span className="sr-only">🌀</span>'s site!
+            </h1>
+
+            <nav className="links" aria-label="Links">
+              <button type="button" className="link" onClick={() => setIsContactOpen(true)}>
+                <LinkBody no="01" label="Contact" zh="联系" meta="1@chenyy.cc" />
+              </button>
+              <button type="button" className="link" onClick={() => setIsDonationOpen(true)}>
+                <LinkBody no="02" label="Donate" zh="打赏" meta="alipay · wechat · crypto" />
+              </button>
+              <a className="link" href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                <LinkBody no="03" label="My Github Page" zh="代码" meta="github.com/chenyy1069" />
+              </a>
+              <a className="link" href={PROJECTS_URL} target="_blank" rel="noopener noreferrer">
+                <LinkBody no="04" label="My Projects" zh="项目" meta="navigation.chenyy.cc" />
+              </a>
+            </nav>
           </div>
 
-          <TypingTitle text="Hi! Welcome to ChenYY🌀's site!" accent="ChenYY" />
+          <Orbit />
+        </main>
 
-          <nav className="actions">
-            <button className="action" style={{ '--c': 'var(--cyan)' } as React.CSSProperties} onClick={() => setIsContactOpen(true)}>
-              <Mail size={16} />
-              <span>Contact</span>
-              <kbd>C</kbd>
-            </button>
-
-            <button className="action" style={{ '--c': 'var(--amber)' } as React.CSSProperties} onClick={() => setIsDonationOpen(true)}>
-              <DollarSign size={16} />
-              <span>Donate</span>
-              <kbd>D</kbd>
-            </button>
-
-            <a className="action" style={{ '--c': 'var(--ink)' } as React.CSSProperties} href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-              <Github size={16} />
-              <span>My Github Page<ArrowUpRight size={12} className="out" /></span>
-              <kbd>G</kbd>
-            </a>
-
-            <a className="action" style={{ '--c': 'var(--violet)' } as React.CSSProperties} href={PROJECTS_URL} target="_blank" rel="noopener noreferrer">
-              <Globe size={16} />
-              <span>My Projects<ArrowUpRight size={12} className="out" /></span>
-              <kbd>P</kbd>
-            </a>
-          </nav>
-        </HoloCard>
-
-        <footer className="corners" aria-hidden="true">
+        <footer className="site-footer">
           <span>© {new Date().getFullYear()} ChenYY</span>
-          <span className="hint">
-            <span className="hint-fine">click the void ✦</span>
-            <span className="hint-touch">tap the void ✦</span>
-          </span>
+          <span className="footer-keys">KEYS — C · D · G · P</span>
         </footer>
-      </main>
+      </div>
 
-      {/* Modals & Overlays, stacked by z-index: donation 40 < contact 50 < crypto 60 < QR 70 */}
+      {/* Dialogs, stacked by z-index: donate 40 < contact 50 < crypto 60 < QR 70 */}
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
 
-      <DonationOverlay
+      <DonationModal
         isOpen={isDonationOpen}
         onClose={() => setIsDonationOpen(false)}
         onOpenCrypto={() => setIsCryptoOpen(true)}

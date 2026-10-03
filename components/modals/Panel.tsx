@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 
 interface PanelProps {
+  kicker: string;
   title: string;
   footer?: string;
   zIndex: number;
@@ -10,8 +11,8 @@ interface PanelProps {
   children: React.ReactNode;
 }
 
-/** Shared shell for the dialogs: dimmed backdrop, glass panel, close button. */
-export const Panel: React.FC<PanelProps> = ({ title, footer, zIndex, wide, onClose, children }) => (
+/** Shared shell for the dialogs: a square paper sheet with a round close button. */
+export const Panel: React.FC<PanelProps> = ({ kicker, title, footer, zIndex, wide, onClose, children }) => (
   <div className="layer" style={{ zIndex }} onClick={onClose}>
     <div
       className={`panel ${wide ? 'panel-wide' : ''}`}
@@ -21,9 +22,12 @@ export const Panel: React.FC<PanelProps> = ({ title, footer, zIndex, wide, onClo
       onClick={(e) => e.stopPropagation()}
     >
       <header className="panel-head">
-        <h2>{title}</h2>
-        <button className="icon-btn" onClick={onClose} aria-label="Close" autoFocus>
-          <X size={18} />
+        <div>
+          <p className="panel-kicker">{kicker}</p>
+          <h2>{title}</h2>
+        </div>
+        <button className="round-btn" onClick={onClose} aria-label="Close" autoFocus>
+          <X size={17} strokeWidth={1.5} />
         </button>
       </header>
       <div className="panel-body">{children}</div>

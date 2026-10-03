@@ -1,17 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ChenYY🌀's Site</title>
     <meta name="description" content="Hi! Welcome to ChenYY🌀's site!">
-    <meta name="theme-color" content="#050507">
+    <meta name="theme-color" content="#f4f1e9">
     <meta property="og:title" content="ChenYY🌀's Site">
     <meta property="og:description" content="Hi! Welcome to ChenYY🌀's site!">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌀</text></svg>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script>
+      // Set the theme before first paint: a saved choice wins, otherwise follow the system.
+      (function () {
+        var theme = 'light';
+        try {
+          var saved = localStorage.getItem('chenyy-theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+          else if (window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
+        } catch (e) {}
+        document.documentElement.dataset.theme = theme;
+        // Assemble the page on the first visit of a session.
+        try {
+          var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!calm && !sessionStorage.getItem('chenyy-entered')) {
+            document.documentElement.classList.add('is-entering');
+            sessionStorage.setItem('chenyy-entered', '1');
+          }
+        } catch (e) {}
+        if (theme === 'dark') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#20221d');
+      })();
+    </script>
 </head>
 <body>
     <div id="root"></div>
