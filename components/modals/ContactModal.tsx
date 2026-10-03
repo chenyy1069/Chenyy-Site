@@ -38,7 +38,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
   if (!isOpen) return null;
 
   return (
-    <Panel kicker="03 / SAY HELLO" title="Contact Info" footer="Click an item to copy" zIndex={50} onClose={onClose}>
+    <Panel kicker="01 / CONTACT" title="Contact Info" footer="Click an item to copy" zIndex={50} onClose={onClose}>
       <ContactItem icon={Mail} label="Email" value="1@chenyy.cc" />
       <ContactItem icon={MessageCircle} label="Telegram" value="@Chenyy1069" />
       <ContactItem icon={MessageSquareText} label="WeChat" value="@19129958669" />

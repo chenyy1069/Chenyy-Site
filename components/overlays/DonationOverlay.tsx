@@ -43,7 +43,7 @@ export const DonationOverlay: React.FC<DonationOverlayProps> = ({
           <ArrowLeft size={15} strokeWidth={1.5} />
           Back
         </button>
-        <span className="section-note">04 / FUEL</span>
+        <span className="donate-note">02 / DONATE</span>
       </div>
 
       <div className="donate-body">

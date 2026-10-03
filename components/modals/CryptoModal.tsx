@@ -29,7 +29,7 @@ export const CryptoModal: React.FC<CryptoModalProps> = ({ isOpen, onClose }) => 
   if (!isOpen) return null;
 
   return (
-    <Panel kicker="04 / FUEL — ON CHAIN" title="Crypto Addresses" footer="Click address to copy to clipboard" zIndex={60} wide onClose={onClose}>
+    <Panel kicker="02 / DONATE — CRYPTO" title="Crypto Addresses" footer="Click address to copy to clipboard" zIndex={60} wide onClose={onClose}>
       <div className="crypto-list">
         <CryptoItem label="Bitcoin" address="Bc1quekrfj6mh76d8kgjmqtmh24ffa34ha5fsydjzy" />
         <CryptoItem label="Ethereum" address="0x80AD0861b4c68dC9b9de0eB88A135e89CB08F974" />

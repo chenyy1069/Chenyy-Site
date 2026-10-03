@@ -31,4 +31,4 @@ import('@fontsource/noto-serif-sc/400.css');
 // For whoever opens DevTools.
 const WORDMARK = 'font: 600 28px "DM Sans", sans-serif;';
 console.log('%cchenyy%c.%ccc', WORDMARK, `${WORDMARK} color: #c44327;`, WORDMARK);
-console.log('%ca little out of orbit — and now, a little inside the source.  →  github.com/chenyy1069', 'font-family: monospace; color: #8a8a80;');
+console.log('%cgithub.com/chenyy1069', 'font-family: monospace; color: #8a8a80;');
