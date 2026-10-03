@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, Moon, Sun } from 'lucide-react';
 import { ContactModal } from './components/modals/ContactModal';
-import { DonationOverlay } from './components/overlays/DonationOverlay';
+import { DonationModal } from './components/modals/DonationModal';
 import { CryptoModal } from './components/modals/CryptoModal';
 import { ImagePopup } from './components/overlays/ImagePopup';
 import { Spiral, Star } from './components/Artwork';
@@ -34,6 +34,12 @@ export default function App() {
   const [qrImage, setQrImage] = useState<string | null>(null);
   const [starTurns, setStarTurns] = useState(0);
   const { theme, toggle } = useTheme();
+
+  // The entrance sequence is pure CSS; drop its class once it has played.
+  useEffect(() => {
+    const id = window.setTimeout(() => document.documentElement.classList.remove('is-entering'), 2800);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const anyOpen = isContactOpen || isDonationOpen || isCryptoOpen || qrImage !== null;
 
@@ -126,10 +132,10 @@ export default function App() {
         </footer>
       </div>
 
-      {/* Modals & Overlays, stacked by z-index: donation 40 < contact 50 < crypto 60 < QR 70 */}
+      {/* Dialogs, stacked by z-index: donate 40 < contact 50 < crypto 60 < QR 70 */}
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
 
-      <DonationOverlay
+      <DonationModal
         isOpen={isDonationOpen}
         onClose={() => setIsDonationOpen(false)}
         onOpenCrypto={() => setIsCryptoOpen(true)}

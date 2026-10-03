@@ -1,21 +1,30 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /*
- * FIG. 01 — the orb, its drifting rings, and whatever you throw at it.
- * Press, drag and release (or tap) to launch a satellite; it follows real
- * two-body gravity, integrated with symplectic Euler in small substeps.
- * Its fate is known at launch from energy and angular momentum.
+ * FIG. 01 — the orb, its drifting rings, and whatever is thrown at it.
+ *
+ * - Press, drag and release (or tap) to launch a satellite. Up to five fly at
+ *   once under real two-body gravity (symplectic Euler, small substeps).
+ * - A moving pointer carries a little mass of its own and bends nearby
+ *   orbits; it fades once the pointer rests, so taps stay clean circles.
+ * - The orb is lit from wherever the pointer is.
+ * - Satellites are kept in this browser and resume on the next visit.
  */
 
 const C = 260;
 const R = 92; // orb radius
 const RING_A = -16;
 const RING_B = 24;
-const MU = 3.2e6; // GM, px³/s²
+const MU = 3.2e6; // orb GM, px³/s²
+const MU_POINTER = 6e4; // the pointer's GM while it moves
+const PRESENCE_FADE = 0.5; // s; a still pointer stops pulling
+const SOFTEN = 30; // pointer softening length, px
 const GAIN = 1.8; // drag px → px/s
 const SUBSTEPS = 8;
-const TRAIL = 900;
-const GHOSTS = 3;
+const TRAIL = 600;
+const MAX_BODIES = 5;
+const STORE_KEY = 'chenyy-orbits';
+const LIGHT_HOME = { x: 0.36, y: 0.3 };
 
 type Vec = { x: number; y: number };
 type Outcome = 'fall' | 'escape' | 'orbit';
@@ -23,8 +32,17 @@ interface Reading {
   e: number;
   outcome: Outcome;
 }
+interface Body {
+  id: number;
+  p: Vec;
+  v: Vec;
+  trail: Vec[];
+  alive: boolean;
+  fate?: Outcome;
+}
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i);
+const finite = (...ns: unknown[]) => ns.every((n) => typeof n === 'number' && Number.isFinite(n));
 
 const classify = (p: Vec, v: Vec): Reading => {
   const rx = p.x - C;
@@ -50,11 +68,36 @@ const circular = (p: Vec): Vec => {
 
 const toPoints = (pts: Vec[]) => pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
+const formatReading = (r: Reading | null) =>
+  r ? `e = ${r.e >= 10 ? '≥10' : r.e.toFixed(2)} — ${{ fall: 'FALL', escape: 'ESCAPE', orbit: 'ORBIT' }[r.outcome]}` : '—';
+
+const loadStored = (): { p: Vec; v: Vec }[] => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) ?? '[]');
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((b) => b && finite(b.p?.x, b.p?.y, b.v?.x, b.v?.y))
+      .filter((b) => Math.hypot(b.p.x - C, b.p.y - C) > R)
+      .slice(0, MAX_BODIES);
+  } catch {
+    return [];
+  }
+};
+
 function Rings({ rotate, count, clip }: { rotate: number; count: number; clip?: boolean }) {
   return (
     <g transform={`rotate(${rotate} ${C} ${C})`} clipPath={clip ? 'url(#orbit-front)' : undefined}>
       {range(count).map((i) => (
-        <ellipse key={i} cx={C} cy={C} rx={196 + i * 3} ry={52 + i * 1.6} transform={`rotate(${i * 0.9} ${C} ${C})`} />
+        <ellipse
+          key={i}
+          cx={C}
+          cy={C}
+          rx={196 + i * 3}
+          ry={52 + i * 1.6}
+          pathLength={1}
+          transform={`rotate(${i * 0.9} ${C} ${C})`}
+          style={{ animationDelay: `${300 + i * 70}ms` }}
+        />
       ))}
     </g>
   );
@@ -62,69 +105,216 @@ function Rings({ rotate, count, clip }: { rotate: number; count: number; clip?: 
 
 export function Orbit() {
   const svgRef = useRef<SVGSVGElement>(null);
-  const trailRef = useRef<SVGPolylineElement>(null);
-  const satRef = useRef<SVGCircleElement>(null);
-  const body = useRef<{ p: Vec; v: Vec; trail: Vec[]; alive: boolean } | null>(null);
+  const gradRef = useRef<SVGRadialGradientElement>(null);
+  const readoutRef = useRef<HTMLSpanElement>(null);
+
+  const bodies = useRef<Body[]>([]);
+  const els = useRef(new Map<number, { trail: SVGPolylineElement | null; sat: SVGCircleElement | null }>());
+  const nextId = useRef(1);
+  const pointer = useRef({ x: 0, y: 0, active: false, presence: 0 });
+  const light = useRef({ ...LIGHT_HOME });
+  const lightTarget = useRef({ ...LIGHT_HOME });
+  const aimRef = useRef(false);
   const raf = useRef(0);
+  const running = useRef(false);
   const last = useRef(0);
+  const frame = useRef(0);
+  const lastSave = useRef(0);
+  const reduceMotion = useRef(false);
 
-  const [ghosts, setGhosts] = useState<string[]>([]);
+  const [ids, setIds] = useState<number[]>([]);
+  const [fading, setFading] = useState<number[]>([]);
   const [aim, setAim] = useState<{ from: Vec; to: Vec } | null>(null);
-  const [reading, setReading] = useState<Reading | null>(null);
 
-  const step = (now: number) => {
-    const b = body.current;
-    if (!b || !b.alive) return;
-    const dt = Math.min(0.033, (now - last.current) / 1000) / SUBSTEPS;
+  const setReadout = (r: Reading | null) => {
+    if (readoutRef.current) readoutRef.current.textContent = formatReading(r);
+  };
+
+  const save = () => {
+    try {
+      const alive = bodies.current.filter((b) => b.alive).map(({ p, v }) => ({ p, v }));
+      localStorage.setItem(STORE_KEY, JSON.stringify(alive));
+    } catch {
+      // Nothing to remember without storage.
+    }
+  };
+
+  const retire = (b: Body, fate: Outcome) => {
+    if (!b.alive) return;
+    b.alive = false;
+    b.fate = fate;
+    els.current.get(b.id)?.sat?.setAttribute('opacity', '0');
+    setFading((f) => [...f, b.id]);
+    window.setTimeout(() => {
+      bodies.current = bodies.current.filter((x) => x.id !== b.id);
+      els.current.delete(b.id);
+      setIds((list) => list.filter((id) => id !== b.id));
+      setFading((f) => f.filter((id) => id !== b.id));
+    }, 1600);
+  };
+
+  const tick = (now: number) => {
+    const dt = Math.min(0.033, Math.max(0, (now - last.current) / 1000)) / SUBSTEPS;
     last.current = now;
-    for (let i = 0; i < SUBSTEPS; i++) {
-      const rx = b.p.x - C;
-      const ry = b.p.y - C;
-      const r = Math.hypot(rx, ry);
-      if (r <= R || r > 2600) {
-        b.alive = false;
-        break;
+    const ptr = pointer.current;
+    ptr.presence *= Math.exp(-(dt * SUBSTEPS) / PRESENCE_FADE);
+    const pull = ptr.active && !aimRef.current ? MU_POINTER * ptr.presence : 0;
+    let busy = false;
+
+    for (const b of bodies.current) {
+      if (!b.alive) continue;
+      busy = true;
+      for (let i = 0; i < SUBSTEPS; i++) {
+        const rx = b.p.x - C;
+        const ry = b.p.y - C;
+        const r = Math.hypot(rx, ry);
+        if (r <= R) {
+          retire(b, 'fall');
+          break;
+        }
+        if (r > 1400) {
+          retire(b, 'escape');
+          break;
+        }
+        const k = -MU / (r * r * r);
+        let ax = rx * k;
+        let ay = ry * k;
+        if (pull > 1) {
+          const dx = ptr.x - b.p.x;
+          const dy = ptr.y - b.p.y;
+          const d2 = dx * dx + dy * dy + SOFTEN * SOFTEN;
+          const kp = pull / (d2 * Math.sqrt(d2));
+          ax += dx * kp;
+          ay += dy * kp;
+        }
+        b.v.x += ax * dt;
+        b.v.y += ay * dt;
+        b.p.x += b.v.x * dt;
+        b.p.y += b.v.y * dt;
       }
-      const k = -MU / (r * r * r);
-      b.v.x += rx * k * dt;
-      b.v.y += ry * k * dt;
-      b.p.x += b.v.x * dt;
-      b.p.y += b.v.y * dt;
+      b.trail.push({ x: b.p.x, y: b.p.y });
+      if (b.trail.length > TRAIL) b.trail.shift();
+      const el = els.current.get(b.id);
+      el?.trail?.setAttribute('points', toPoints(b.trail));
+      if (b.alive) {
+        el?.sat?.setAttribute('cx', b.p.x.toFixed(1));
+        el?.sat?.setAttribute('cy', b.p.y.toFixed(1));
+        el?.sat?.setAttribute('opacity', '1');
+      }
     }
-    b.trail.push({ x: b.p.x, y: b.p.y });
-    if (b.trail.length > TRAIL) b.trail.shift();
-    trailRef.current?.setAttribute('points', toPoints(b.trail));
-    const sat = satRef.current;
-    if (sat) {
-      sat.setAttribute('cx', b.p.x.toFixed(1));
-      sat.setAttribute('cy', b.p.y.toFixed(1));
-      sat.setAttribute('opacity', b.alive ? '1' : '0');
+
+    // The readout follows the newest satellite, live, since the pointer can perturb it.
+    frame.current += 1;
+    if (!aimRef.current && frame.current % 6 === 0) {
+      const newest = [...bodies.current].reverse().find((b) => b.alive);
+      if (newest) setReadout(classify(newest.p, newest.v));
     }
-    if (b.alive) raf.current = requestAnimationFrame(step);
+
+    // Ease the orb's light toward the pointer.
+    const L = light.current;
+    const T = lightTarget.current;
+    const dl = Math.abs(T.x - L.x) + Math.abs(T.y - L.y);
+    if (dl > 0.0005) {
+      L.x += (T.x - L.x) * 0.08;
+      L.y += (T.y - L.y) * 0.08;
+      gradRef.current?.setAttribute('cx', L.x.toFixed(4));
+      gradRef.current?.setAttribute('cy', L.y.toFixed(4));
+      busy = true;
+    }
+
+    if (now - lastSave.current > 2000) {
+      lastSave.current = now;
+      save();
+    }
+
+    if (busy) {
+      raf.current = requestAnimationFrame(tick);
+    } else {
+      running.current = false;
+    }
   };
 
-  const launch = (p: Vec, v: Vec) => {
-    cancelAnimationFrame(raf.current);
-    const prev = body.current;
-    if (prev && prev.trail.length > 1) {
-      const pts = toPoints(prev.trail);
-      setGhosts((g) => [pts, ...g].slice(0, GHOSTS));
-    }
-    body.current = { p: { ...p }, v: { ...v }, trail: [{ ...p }], alive: true };
-    trailRef.current?.setAttribute('points', '');
-    setReading(classify(p, v));
+  const ensureLoop = () => {
+    if (running.current) return;
+    running.current = true;
     last.current = performance.now();
-    raf.current = requestAnimationFrame(step);
+    raf.current = requestAnimationFrame(tick);
   };
 
-  // One satellite already in flight, unless motion is reduced.
+  const launch = (p: Vec, v: Vec, announce = true) => {
+    const alive = bodies.current.filter((b) => b.alive);
+    if (alive.length >= MAX_BODIES) retire(alive[0], 'orbit');
+    const id = nextId.current++;
+    bodies.current.push({ id, p: { ...p }, v: { ...v }, trail: [{ ...p }], alive: true });
+    setIds((list) => [...list, id]);
+    if (announce) setReadout(classify(p, v));
+    ensureLoop();
+  };
+
   useEffect(() => {
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const p = { x: C + 34, y: C - 206 };
-      const c = circular(p);
-      launch(p, { x: c.x * 0.86, y: c.y * 0.86 });
+    reduceMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const entering = document.documentElement.classList.contains('is-entering');
+    let start: number | undefined;
+
+    if (!reduceMotion.current) {
+      const stored = loadStored();
+      const begin = () => {
+        if (stored.length) stored.forEach((b) => launch(b.p, b.v));
+        else {
+          const p = { x: C + 34, y: C - 206 };
+          const c = circular(p);
+          launch(p, { x: c.x * 0.86, y: c.y * 0.86 });
+        }
+      };
+      // Let the drawing finish assembling before anything moves.
+      if (entering) start = window.setTimeout(begin, 1500);
+      else begin();
     }
-    return () => cancelAnimationFrame(raf.current);
+
+    const handlePointer = (e: PointerEvent) => {
+      const svg = svgRef.current;
+      const ctm = svg?.getScreenCTM();
+      if (!svg || !ctm) return;
+      const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+      const prev = pointer.current;
+      const moved = Math.hypot(pt.x - prev.x, pt.y - prev.y);
+      pointer.current = { x: pt.x, y: pt.y, active: true, presence: Math.min(1, prev.presence + moved / 40) };
+
+      if (!reduceMotion.current) {
+        // light comes from the pointer's side, more strongly the further away it is
+        const dx = pt.x - C;
+        const dy = pt.y - C;
+        const d = Math.hypot(dx, dy) || 1;
+        const f = Math.min(1, d / 700);
+        lightTarget.current = { x: 0.5 + (dx / d) * 0.24 * f, y: 0.5 + (dy / d) * 0.24 * f };
+        ensureLoop();
+      }
+    };
+    const handleLeave = () => {
+      pointer.current.active = false;
+      lightTarget.current = { ...LIGHT_HOME };
+      ensureLoop();
+    };
+    const handleUp = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') handleLeave();
+    };
+
+    window.addEventListener('pointermove', handlePointer, { passive: true });
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('blur', handleLeave);
+    document.documentElement.addEventListener('pointerleave', handleLeave);
+    window.addEventListener('pagehide', save);
+
+    return () => {
+      window.clearTimeout(start);
+      cancelAnimationFrame(raf.current);
+      running.current = false;
+      window.removeEventListener('pointermove', handlePointer);
+      window.removeEventListener('pointerup', handleUp);
+      window.removeEventListener('blur', handleLeave);
+      document.documentElement.removeEventListener('pointerleave', handleLeave);
+      window.removeEventListener('pagehide', save);
+    };
   }, []);
 
   const toSvg = (e: React.PointerEvent): Vec | null => {
@@ -145,22 +335,35 @@ export function Orbit() {
     const p = toSvg(e);
     if (!p || Math.hypot(p.x - C, p.y - C) < R + 6) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    setAim({ from: p, to: p });
+    const a = { from: p, to: p };
+    aimRef.current = true;
+    setAim(a);
+    setReadout(classify(p, velocityOf(a)));
   };
 
   const handleMove = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!aim) return;
     const p = toSvg(e);
-    if (p) setAim({ from: aim.from, to: p });
+    if (!p) return;
+    const a = { from: aim.from, to: p };
+    setAim(a);
+    setReadout(classify(a.from, velocityOf(a)));
   };
 
   const handleUp = () => {
     if (!aim) return;
+    aimRef.current = false;
+    pointer.current.presence = 0;
     launch(aim.from, velocityOf(aim));
     setAim(null);
   };
 
-  const shown = aim ? classify(aim.from, velocityOf(aim)) : reading;
+  const bind = (id: number, kind: 'trail' | 'sat') => (el: SVGPolylineElement | SVGCircleElement | null) => {
+    const entry = els.current.get(id) ?? { trail: null, sat: null };
+    if (kind === 'trail') entry.trail = el as SVGPolylineElement | null;
+    else entry.sat = el as SVGCircleElement | null;
+    els.current.set(id, entry);
+  };
 
   let head = '';
   if (aim) {
@@ -188,7 +391,10 @@ export function Orbit() {
         onPointerDown={handleDown}
         onPointerMove={handleMove}
         onPointerUp={handleUp}
-        onPointerCancel={() => setAim(null)}
+        onPointerCancel={() => {
+          aimRef.current = false;
+          setAim(null);
+        }}
       >
         <defs>
           <pattern id="orbit-dots" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -201,7 +407,7 @@ export function Orbit() {
           <mask id="orbit-fade-mask">
             <rect width="520" height="520" fill="url(#orbit-fade)" />
           </mask>
-          <radialGradient id="orbit-orb" cx="0.36" cy="0.3" r="0.78">
+          <radialGradient id="orbit-orb" ref={gradRef} cx={LIGHT_HOME.x} cy={LIGHT_HOME.y} r="0.78">
             <stop offset="0" style={{ stopColor: 'var(--orb-highlight)' }} />
             <stop offset="0.48" style={{ stopColor: 'var(--orb-mid)' }} />
             <stop offset="1" style={{ stopColor: 'var(--orb-shadow)' }} />
@@ -237,13 +443,16 @@ export function Orbit() {
           <Rings rotate={RING_B} count={5} />
         </g>
 
-        {ghosts.map((pts, i) => (
-          <polyline key={`${i}-${pts.length}`} className="orbit-ghost" points={pts} style={{ opacity: 0.5 - i * 0.14 }} />
-        ))}
-        <polyline ref={trailRef} className="orbit-trail" />
+        <g className="orbit-bodies">
+          {ids.map((id) => (
+            <polyline key={id} ref={bind(id, 'trail')} className={`orbit-trail ${fading.includes(id) ? 'is-fading' : ''}`} />
+          ))}
+        </g>
 
-        <circle cx={C} cy={C} r={R} fill="url(#orbit-orb)" />
-        <circle cx={C} cy={C} r={R} fill="#fff" filter="url(#orbit-grain)" opacity="0.16" />
+        <g className="orbit-orb">
+          <circle cx={C} cy={C} r={R} fill="url(#orbit-orb)" />
+          <circle cx={C} cy={C} r={R} fill="#fff" filter="url(#orbit-grain)" opacity="0.16" />
+        </g>
 
         <g className="orbit-ring orbit-ring-a">
           <Rings rotate={RING_A} count={7} clip />
@@ -252,7 +461,11 @@ export function Orbit() {
           <Rings rotate={RING_B} count={5} clip />
         </g>
 
-        <circle ref={satRef} className="orbit-sat" r="6" opacity="0" />
+        <g className="orbit-bodies">
+          {ids.map((id) => (
+            <circle key={id} ref={bind(id, 'sat')} className="orbit-sat" r="6" opacity="0" />
+          ))}
+        </g>
 
         {aim && (
           <g className="orbit-aim">
@@ -267,14 +480,8 @@ export function Orbit() {
 
       <figcaption>
         <span>FIG. 01 · DRAG TO THROW</span>
-        <span className="orbit-readout" aria-live="polite">
-          {shown ? (
-            <>
-              e = {shown.e >= 10 ? '≥10' : shown.e.toFixed(2)} — {{ fall: 'FALL', escape: 'ESCAPE', orbit: 'ORBIT' }[shown.outcome]}
-            </>
-          ) : (
-            '—'
-          )}
+        <span className="orbit-readout" ref={readoutRef}>
+          —
         </span>
       </figcaption>
     </figure>

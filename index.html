@@ -19,6 +19,14 @@
           else if (window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
         } catch (e) {}
         document.documentElement.dataset.theme = theme;
+        // Assemble the page on the first visit of a session.
+        try {
+          var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!calm && !sessionStorage.getItem('chenyy-entered')) {
+            document.documentElement.classList.add('is-entering');
+            sessionStorage.setItem('chenyy-entered', '1');
+          }
+        } catch (e) {}
         if (theme === 'dark') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#20221d');
       })();
     </script>
